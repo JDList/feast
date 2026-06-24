@@ -1,0 +1,12 @@
+This is the FEAST software package
+
+FEAST stands for Finite Element Analysis for Simulations and Training
+
+---------------------------------------------------------------------
+
+FEASTs main purpose is to be a way of generating large datasets of solved simulations for ML and other usecases.
+
+
+Its probably not very good icl.
+
+- James D. List
