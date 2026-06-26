@@ -1,7 +1,0 @@
-vector 2 0.00155748
-mesh 2 0.00106592
-dense_matrix 1 0.00276632
-sparse_matrix 1 0.00224717
-materials 1 0.00154405
-tet4 1 0.0017551
----

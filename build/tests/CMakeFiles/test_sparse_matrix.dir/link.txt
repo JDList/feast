@@ -1,1 +1,0 @@
-/usr/bin/c++ -Wl,--dependency-file=CMakeFiles/test_sparse_matrix.dir/link.d CMakeFiles/test_sparse_matrix.dir/test_sparse_matrix.cpp.o -o test_sparse_matrix  ../src/linalg/libfeast_linalg.a

@@ -1,1 +1,0 @@
-/usr/bin/c++ -Wl,--dependency-file=CMakeFiles/test_dense_matrix.dir/link.d CMakeFiles/test_dense_matrix.dir/test_dense_matrix.cpp.o -o test_dense_matrix  ../src/linalg/libfeast_linalg.a

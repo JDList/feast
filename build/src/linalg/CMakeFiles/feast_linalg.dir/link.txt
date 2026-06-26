@@ -1,2 +1,0 @@
-/usr/bin/ar qc libfeast_linalg.a CMakeFiles/feast_linalg.dir/Vector.cpp.o CMakeFiles/feast_linalg.dir/DenseMatrix.cpp.o CMakeFiles/feast_linalg.dir/SparseMatrix.cpp.o
-/usr/bin/ranlib libfeast_linalg.a
