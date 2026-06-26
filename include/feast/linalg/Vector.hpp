@@ -23,8 +23,6 @@ public:
     void setConstant(double value);
     double norm() const;
 
-    double& operator[](std::size_t i);
-    const double& operator[](std::size_t i) const;
 
     Eigen::VectorXd& eigen();
     const Eigen::VectorXd& eigen() const;

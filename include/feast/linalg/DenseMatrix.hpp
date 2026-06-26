@@ -25,7 +25,7 @@ public:
     DenseMatrix& operator+=(const DenseMatrix& other);
 
     void setConstant(double value);
-    void SetIdentity();
+    void setIdentity();
     
     Eigen::MatrixXd& eigen();
     const Eigen::MatrixXd& eigen() const;

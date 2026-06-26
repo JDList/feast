@@ -1,0 +1,2 @@
+/usr/bin/ar qc libfeast_elements.a CMakeFiles/feast_elements.dir/Tet4.cpp.o
+/usr/bin/ranlib libfeast_elements.a

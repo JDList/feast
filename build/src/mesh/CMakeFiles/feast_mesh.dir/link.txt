@@ -1,0 +1,2 @@
+/usr/bin/ar qc libfeast_mesh.a CMakeFiles/feast_mesh.dir/Mesh.cpp.o
+/usr/bin/ranlib libfeast_mesh.a

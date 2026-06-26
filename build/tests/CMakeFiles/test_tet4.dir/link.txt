@@ -1,0 +1,1 @@
+/usr/bin/c++ -Wl,--dependency-file=CMakeFiles/test_tet4.dir/link.d CMakeFiles/test_tet4.dir/test_tet4.cpp.o -o test_tet4  ../src/elements/libfeast_elements.a ../src/linalg/libfeast_linalg.a ../src/mesh/libfeast_mesh.a ../src/materials/libfeast_materials.a

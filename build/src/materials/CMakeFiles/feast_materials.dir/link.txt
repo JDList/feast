@@ -1,0 +1,2 @@
+/usr/bin/ar qc libfeast_materials.a CMakeFiles/feast_materials.dir/LinearElastic.cpp.o
+/usr/bin/ranlib libfeast_materials.a
