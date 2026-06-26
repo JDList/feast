@@ -2,9 +2,9 @@
 #include <cmath>
 #include <vector>
 
-#include <Eigen/Sparse>
 
 #include "feast/linalg/SparseMatrix.hpp"
+#include "feast/linalg/Triplet.hpp"
 
 namespace {
 bool almostEqual(double a, double b, double eps = 1e-12)
@@ -18,7 +18,7 @@ int main()
     feast::SparseMatrix K(3, 3);
     K.reserve(4);
 
-    std::vector<Eigen::Triplet<double>> triplets;
+    std::vector<feast::Triplet> triplets;
     triplets.emplace_back(0, 0, 10.0);
     triplets.emplace_back(0, 1, -2.0);
     triplets.emplace_back(1, 0, -2.0);

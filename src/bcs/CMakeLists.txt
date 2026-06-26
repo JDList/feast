@@ -1,3 +1,3 @@
 target_sources(feast PRIVATE
-    Tet4.cpp
+    BoundaryConditions.cpp
 )

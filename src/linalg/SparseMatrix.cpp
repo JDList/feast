@@ -41,13 +41,21 @@ void SparseMatrix::setZero()
     data_.setZero();
 }
 
-void SparseMatrix::setFromTriplets(
-        const std::vector<Eigen::Triplet<double>>& triplets)
+void SparseMatrix::setFromTriplets(const std::vector<Triplet>& triplets)
 {
-    data_.setFromTriplets(
-            triplets.begin(),
-            triplets.end()
-    );
+    std::vector<Eigen::Triplet<double>> eigenTriplets;
+    eigenTriplets.reserve(triplets.size());
+
+    for (const auto& t : triplets)
+    {
+        eigenTriplets.emplace_back(
+            static_cast<int>(t.row),
+            static_cast<int>(t.col),
+            t.value
+        );
+    }
+
+    data_.setFromTriplets(eigenTriplets.begin(), eigenTriplets.end());
 }
 
 Eigen::SparseMatrix<double>&

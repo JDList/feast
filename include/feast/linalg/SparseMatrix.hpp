@@ -3,6 +3,7 @@
 #include <Eigen/Sparse>
 #include <cstddef>
 #include <vector>
+#include "feast/linalg/Triplet.hpp"
 
 namespace feast {
 
@@ -25,7 +26,7 @@ public:
     void setZero();
 
     void setFromTriplets(
-        const std::vector<Eigen::Triplet<double>>& triplets
+            const std::vector<Triplet>& triplets
     );
         
 
