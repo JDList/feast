@@ -40,4 +40,4 @@ private:
     std::vector<NeumannCondition> m_neumann;
 };
 
-} // namespace feast
+} // namespace feast // namespace feast
