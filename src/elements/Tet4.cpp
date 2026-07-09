@@ -49,21 +49,8 @@ DenseMatrix inverse3x3(const DenseMatrix& A)
     return inv;
 }
 
-} // namespace
-
-DenseMatrix Tet4::stiffnessMatrix(
-    const Mesh& mesh,
-    const Element& element,
-    const LinearElastic& material)
+DenseMatrix jacobianForTet4(const Mesh& mesh, const Element& element)
 {
-    if (element.type != ElementType::Tet4) {
-        throw std::invalid_argument("Tet4::stiffnessMatrix called with non-Tet4 element.");
-    }
-
-    if (element.node_ids.size() != 4) {
-        throw std::invalid_argument("Tet4 element must have exactly 4 node IDs.");
-    }
-
     const auto& nodes = mesh.nodes();
 
     const Node& n1 = nodes.at(element.node_ids[0]);
@@ -84,17 +71,22 @@ DenseMatrix Tet4::stiffnessMatrix(
     J(2, 1) = n3.z - n1.z;
     J(2, 2) = n4.z - n1.z;
 
+    return J;
+}
+
+double tet4Volume(const DenseMatrix& J)
+{
     const double detJ =
         J(0, 0) * (J(1, 1) * J(2, 2) - J(1, 2) * J(2, 1))
       - J(0, 1) * (J(1, 0) * J(2, 2) - J(1, 2) * J(2, 0))
       + J(0, 2) * (J(1, 0) * J(2, 1) - J(1, 1) * J(2, 0));
 
-    const double volume = std::abs(detJ) / 6.0;
+    return std::abs(detJ) / 6.0;
+}
 
-    if (volume <= 0.0) {
-        throw std::runtime_error("Tet4 element has zero or negative volume.");
-    }
-
+DenseMatrix tet4BMatrix(const Mesh& mesh, const Element& element)
+{
+    const DenseMatrix J = jacobianForTet4(mesh, element);
     const DenseMatrix Jinv = inverse3x3(J);
     const DenseMatrix JTinv = Jinv.transpose();
 
@@ -144,6 +136,11 @@ DenseMatrix Tet4::stiffnessMatrix(
         B(5, c + 2) = dN_dx;
     }
 
+    return B;
+}
+
+DenseMatrix tet4ConstitutiveMatrix(const LinearElastic& material)
+{
     const double E = material.youngsModulus();
     const double nu = material.poissonRatio();
 
@@ -168,10 +165,76 @@ DenseMatrix Tet4::stiffnessMatrix(
     D(4, 4) = mu;
     D(5, 5) = mu;
 
+    return D;
+}
+
+} // namespace
+
+DenseMatrix Tet4::stiffnessMatrix(
+    const Mesh& mesh,
+    const Element& element,
+    const LinearElastic& material)
+{
+    if (element.type != ElementType::Tet4) {
+        throw std::invalid_argument("Tet4::stiffnessMatrix called with non-Tet4 element.");
+    }
+
+    if (element.node_ids.size() != 4) {
+        throw std::invalid_argument("Tet4 element must have exactly 4 node IDs.");
+    }
+
+    const DenseMatrix J = jacobianForTet4(mesh, element);
+    const double volume = tet4Volume(J);
+
+    if (volume <= 0.0) {
+        throw std::runtime_error("Tet4 element has zero or negative volume.");
+    }
+
+    const DenseMatrix B = tet4BMatrix(mesh, element);
+    const DenseMatrix D = tet4ConstitutiveMatrix(material);
+
     DenseMatrix Ke = B.transpose() * D * B;
     Ke *= volume;
 
     return Ke;
+}
+
+
+Vector Tet4::strain(
+    const Mesh& mesh,
+    const Element& element,
+    const Vector& elementDisplacements)
+{
+    if (element.type != ElementType::Tet4) {
+        throw std::invalid_argument("Tet4::strain called with non-Tet4 element.");
+    }
+
+    if (element.node_ids.size() != 4) {
+        throw std::invalid_argument("Tet4 element must have exactly 4 node IDs.");
+    }
+
+    if (elementDisplacements.size() != 12) {
+        throw std::invalid_argument("Tet4 displacement vector must have size 12.");
+    }
+
+    const DenseMatrix B = tet4BMatrix(mesh, element);
+    Vector eps(6);
+    eps = B * elementDisplacements;
+    return eps;
+}
+
+Vector Tet4::stress(
+    const Mesh& mesh,
+    const Element& element,
+    const LinearElastic& material,
+    const Vector& elementDisplacements)
+{
+    const Vector eps = strain(mesh, element, elementDisplacements);
+    const DenseMatrix D = tet4ConstitutiveMatrix(material);
+
+    Vector sigma(6);
+    sigma = D * eps;
+    return sigma;
 }
 
 } // namespace feast

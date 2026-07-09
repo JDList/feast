@@ -2,6 +2,7 @@
 
 #include <Eigen/Dense>
 #include <cstddef>
+#include "feast/linalg/Vector.hpp"
 
 namespace feast {
 
@@ -23,6 +24,8 @@ public:
     DenseMatrix operator*(const DenseMatrix& other) const;
     DenseMatrix& operator*=(double scalar);
     DenseMatrix& operator+=(const DenseMatrix& other);
+
+    Vector operator*(const Vector& other) const;
 
     void setConstant(double value);
     void setIdentity();

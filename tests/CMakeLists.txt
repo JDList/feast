@@ -48,6 +48,10 @@ add_executable(test_mesher test_mesher.cpp)
 target_link_libraries(test_mesher PRIVATE feast)
 add_test(NAME test_mesher COMMAND test_mesher)
 
+add_executable(test_postprocessing test_postprocessing.cpp)
+target_link_libraries(test_postprocessing PRIVATE feast)
+add_test(NAME test_postprocessing COMMAND test_postprocessing)
+
 add_executable(test_region_bcs test_region_bcs.cpp)
 target_link_libraries(test_region_bcs PRIVATE feast)
 add_test(NAME test_region_bcs COMMAND test_region_bcs)

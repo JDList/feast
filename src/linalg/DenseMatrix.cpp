@@ -68,6 +68,18 @@ DenseMatrix& DenseMatrix::operator+=(
     return *this;
 }
 
+Vector DenseMatrix::operator*(const Vector& other) const
+{
+    if (cols() != other.size()) {
+        throw std::invalid_argument("DenseMatrix::operator*: dimension mismatch.");
+    }
+
+    Vector result;
+    result.resize(rows());
+    result.eigen() = data_ * other.eigen();
+    return result;
+}
+
 void DenseMatrix::setConstant(double value)
 {
     data_.setConstant(value);
