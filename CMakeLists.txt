@@ -16,3 +16,11 @@ if(FEAST_BUILD_TESTS)
   add_subdirectory(tests)
 endif()
 
+option(FEAST_BUILD_PYTHON "Build Python bindings" ON)
+
+if (FEAST_BUILD_PYTHON)
+  add_subdirectory(bindings)
+endif()
+set_target_properties(feast PROPERTIES POSITION_INDEPENDENT_CODE ON)
+  
+

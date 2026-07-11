@@ -7,6 +7,8 @@ CMakeFiles/
 cmake_install.cmake
 Makefile
 
+#Virtural envs
+.venv
 # Compiled binaries
 *.o
 *.obj
