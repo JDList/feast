@@ -11,6 +11,7 @@
 #include "feast/linalg/Triplet.hpp"
 #include "feast/linalg/Vector.hpp"
 #include "feast/linalg/EigenDirectSolver.hpp"
+#include "feast/linalg/EigenCGSolver.hpp"
 
 
 namespace py = pybind11;
@@ -78,4 +79,25 @@ void bindLinalg(py::module_& m)
 
     py::class_<feast::EigenDirectSolver, feast::LinearSolver>(m, "EigenDirectSolver")
         .def(py::init<>());
+
+    py::class_<feast::EigenCGSolver, feast::LinearSolver>( m, "EigenCGSolver")
+        .def(
+            py::init<double, std::size_t>(),
+            py::arg("tolerance") = 1.0e-10,
+            py::arg("max_iterations") = 1000)
+        .def_property_readonly(
+            "tolerance",
+            &feast::EigenCGSolver::tolerance)
+        .def_property_readonly(
+            "max_iterations",
+            &feast::EigenCGSolver::maxIterations)
+        .def_property_readonly(
+            "converged",
+            &feast::EigenCGSolver::converged)
+        .def_property_readonly(
+            "iterations",
+            &feast::EigenCGSolver::iterations)
+        .def_property_readonly(
+            "estimated_error",
+            &feast::EigenCGSolver::estimatedError);
 }

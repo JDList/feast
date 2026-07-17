@@ -29,7 +29,7 @@ def main() -> int:
     assert len(geometry.surfaces()) == 6, f"expected 6 surfaces, got {len(geometry.surfaces())}"
 
     # Meshing
-    mesher = feast.StructuredTetMesher(0.25)
+    mesher = feast.StructuredTetMesher(0.15)
     build = mesher.generate(geometry)
 
     mesh = build.mesh

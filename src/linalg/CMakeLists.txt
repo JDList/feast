@@ -3,4 +3,5 @@ target_sources(feast PRIVATE
     DenseMatrix.cpp
     SparseMatrix.cpp
     EigenDirectSolver.cpp
+    EigenCGSolver.cpp
 )
