@@ -6,7 +6,15 @@ FEAST stands for Finite Element Analysis for Simulations and Training
 
 FEASTs main purpose is to be a way of generating large datasets of solved simulations for ML and other usecases.
 
-
 Its probably not very good icl.
+
+Install with commands:
+
+git clone --recursive-submodules https://github.com/JDList/feast.git
+cd feast
+cmake -S . -B build
+cmake --build build -j
+
+From there python package can be used by including "import feast" in your python file and PYTHONPATH=PATHTOFEAST/feast/python/ before running file or from within this filepath.
 
 - James D. List
