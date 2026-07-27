@@ -23,6 +23,12 @@ std::size_t SparseMatrix::cols() const
     return data_.cols();
 }
 
+std::size_t SparseMatrix::nonZeros() const
+{
+    return static_cast<std::size_t>(data_.nonZeros());
+}
+
+
 void SparseMatrix::resize(
     std::size_t rows,
     std::size_t cols)
@@ -56,6 +62,18 @@ void SparseMatrix::setFromTriplets(const std::vector<Triplet>& triplets)
     }
 
     data_.setFromTriplets(eigenTriplets.begin(), eigenTriplets.end());
+    data_.makeCompressed();
+}
+
+void SparseMatrix::forEachNonZero(
+        const std::function<void(std::size_t, std::size_t, double)>& visitor) const
+{
+    for (Eigen::Index outer = 0; outer < data_.outerSize(); ++outer){
+        for (Eigen::SparseMatrix<double>::InnerIterator entry(data_,outer); entry; ++entry){
+            visitor(static_cast<std::size_t>(entry.row()), static_cast<std::size_t>(entry.col()), entry.value());
+
+        }
+    }
 }
 
 Eigen::SparseMatrix<double>&

@@ -17,6 +17,7 @@ public:
 
     std::size_t rows() const;
     std::size_t cols() const;
+    std::size_t nonZeros() const;
 
     void resize(std::size_t rows,
                 std::size_t cols);
@@ -28,7 +29,7 @@ public:
     void setFromTriplets(
             const std::vector<Triplet>& triplets
     );
-        
+    void forEachNonZero(const std::function<void(std::size_t row, std::size_t col, double value)>& visitor) const;
 
     Eigen::SparseMatrix<double>& eigen();
     const Eigen::SparseMatrix<double>& eigen() const;

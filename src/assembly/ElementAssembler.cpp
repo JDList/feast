@@ -13,13 +13,18 @@ void ElementAssembler::addStiffnessTriplets(const std::vector<int>& dofIds,
     if (elementStiffness.rows() != n || elementStiffness.cols() != n)
         throw std::invalid_argument("Element stiffness size does not match DOF count.");
 
-    triplets.reserve(triplets.size() + n * n);
 
+    for (const int dofId : dofIds)
+    {
+        if (dofId < 0)
+        {
+            throw std::invalid_argument(
+                "Negative global DOF index encountered.");
+        }
+    }
     for (std::size_t i = 0; i < n; ++i)
     {
-        if (dofIds[i] < 0)
-            throw std::invalid_argument("Negative global DOF index encountered.");
-
+       
         for (std::size_t j = 0; j < n; ++j)
         {
             if (dofIds[j] < 0)
@@ -28,11 +33,7 @@ void ElementAssembler::addStiffnessTriplets(const std::vector<int>& dofIds,
             const double value = elementStiffness(i, j);
             if (value != 0.0)
             {
-                triplets.push_back(Triplet{
-                    static_cast<std::size_t>(dofIds[i]),
-                    static_cast<std::size_t>(dofIds[j]),
-                    value
-                });
+                triplets.push_back(Triplet{static_cast<std::size_t>(dofIds[i]),static_cast<std::size_t>(dofIds[j]),value});
             }
         }
     }

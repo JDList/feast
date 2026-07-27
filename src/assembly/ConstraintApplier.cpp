@@ -2,6 +2,7 @@
 
 #include <stdexcept>
 #include <unordered_map>
+#include <vector>
 
 namespace feast {
 
@@ -12,6 +13,9 @@ void ConstraintApplier::applyDirichlet(SparseMatrix& K,
 {
     if (static_cast<std::size_t>(K.rows()) != f.size())
         throw std::invalid_argument("ConstraintApplier: matrix and vector size mismatch.");
+
+    if (K.rows() != K.cols())
+        throw std::invalid_argument("ConstraintApplier: stiffness matrix must be square");
 
     // Map global dof -> prescribed value.
     // This also lets us detect duplicate constraints on the same dof.
@@ -34,47 +38,62 @@ void ConstraintApplier::applyDirichlet(SparseMatrix& K,
         }
     }
 
-    auto& A = K.eigen();
+    if (constrainedDofs.empty())
+    {
+        return;
+    }
+
+    const std::size_t systemSize = K.rows();
+
+    std::vector<unsigned char> isConstrained(systemSize, 0);
+
+    std::vector<double> prescribedValues(systemSize,0.0);
 
     for (const auto& [globalDof, value] : constrainedDofs)
     {
-        if (globalDof >= f.size())
-            throw std::out_of_range("ConstraintApplier: constrained DOF out of range.");
+        isConstrained[globalDof] = 1;
+        prescribedValues[globalDof] = value;
+    }
 
-        // Adjust RHS of all unconstrained equations:
-        // f_i <- f_i - A(i, g) * u_g
-        for (std::size_t row = 0; row < static_cast<std::size_t>(A.rows()); ++row)
+    std::vector<Triplet> entries;
+    entries.reserve(K.nonZeros() + constrainedDofs.size());
+
+    K.forEachNonZero(
+        [&](std::size_t row,
+            std::size_t col,
+            double matrixValue)
         {
-            if (row == globalDof)
-                continue;
+            // Remove every entry belonging to a constrained row.
+            if (isConstrained[row])
+            {
+                return;
+            }
 
-            const double a_ig = A.coeff(static_cast<int>(row), static_cast<int>(globalDof));
-            if (a_ig != 0.0)
-                f[row] -= a_ig * value;
-        }
+            // Remove constrained columns and move their contribution
+            // onto the right-hand side.
+            if (isConstrained[col])
+            {
+                f[row] -=
+                    matrixValue * prescribedValues[col];
 
-        // Zero constrained row and column.
-        for (std::size_t col = 0; col < static_cast<std::size_t>(A.cols()); ++col)
-        {
-            if (col == globalDof)
-                continue;
+                return;
+            }
 
-            A.coeffRef(static_cast<int>(globalDof), static_cast<int>(col)) = 0.0;
-        }
+            entries.push_back(
+                Triplet{row, col, matrixValue});
+        });
 
-        for (std::size_t row = 0; row < static_cast<std::size_t>(A.rows()); ++row)
-        {
-            if (row == globalDof)
-                continue;
+    // Replace each constrained equation with:
+    //
+    // u_g = prescribedValue
+    for (const auto& [globalDof, value] : constrainedDofs)
+    {
+        entries.push_back(
+            Triplet{globalDof, globalDof, 1.0});
 
-            A.coeffRef(static_cast<int>(row), static_cast<int>(globalDof)) = 0.0;
-        }
-
-        A.coeffRef(static_cast<int>(globalDof), static_cast<int>(globalDof)) = 1.0;
         f[globalDof] = value;
     }
 
-    A.makeCompressed();
-}
+    K.setFromTriplets(entries);}
 
 } // namespace feast
