@@ -5,9 +5,9 @@ import feast
 
 # ---------------------------------------------------------------------
 
-LX = 10.0
-LY = 5.0
-LZ = 1.0
+LX = 2.0
+LY = 1.0
+LZ = 0.5
 
 E = 210e9
 NU = 0.3
@@ -17,6 +17,7 @@ sizes = [
     0.5,
     0.25,
     0.125,
+    0.05,
 ]
 
 print(
@@ -25,9 +26,8 @@ print(
     f"{'Elements':>12}"
     f"{'Mesh':>12}"
     f"{'Ke':>12}"
-    f"{'Solve':>12}"
+    f"{'     Solve (D|CG)':>12}"
     f"{'Post':>12}"
-    f"{'Total':>12}"
 )
 
 print("-" * 90)
@@ -64,11 +64,11 @@ for h in sizes:
 
     region_bcs = feast.RegionBoundaryConditionSet()
 
-    for dof in (0, 1, 2):
-        region_bcs.addRegionDirichlet("lowx", dof, 0)
+    #for dof in (0, 1, 2):
+    #    region_bcs.addRegionDirichlet("lowx", dof, 0)
 
-    region_bcs.addRegionNeumann("highx", 2, 1e6)
-    #region_bcs.addRegionNeumann("lowx", 0, -1e6)
+    region_bcs.addRegionNeumann("highx", 0, 1e6)
+    region_bcs.addRegionNeumann("lowx", 0, -1e6)
 
     bcs = feast.BoundaryConditionResolver.resolve(
         region_bcs,
@@ -90,7 +90,9 @@ for h in sizes:
     # Material
     ###################################################################
 
-    material = feast.LinearElastic(E, NU)
+    materials = [
+        feast.LinearElastic(E, NU)
+    ]
 
     ###################################################################
     # Element stiffness
@@ -98,8 +100,19 @@ for h in sizes:
 
     t0 = perf_counter()
 
-    element_stiffnesses = feast.ElementMatrixBuilder.buildStiffnesses(mesh,material)
+    element_stiffnesses = []
 
+    for element in mesh.elements():
+
+        material = materials[element.material_id]
+
+        element_stiffnesses.append(
+            feast.Tet4.stiffnessMatrix(
+                mesh,
+                element,
+                material,
+            )
+        )
 
     ke_time = perf_counter() - t0
 
@@ -107,27 +120,35 @@ for h in sizes:
     # Solve
     ###################################################################
 
-    solver = feast.EigenCGSolver(
+    solverCG = feast.EigenCGSolver(
     tolerance=1e-10,
     max_iterations=5000,
     )
+    solverD = feast.EigenDirectSolver()
 
-    #print("Solver:", type(solver))
 
-    kernel = feast.Kernel(solver)
+    kernelCG = feast.Kernel(solverCG)
+    kernelD = feast.Kernel(solverD)
 
-    start = perf_counter()
-    result = kernel.solveLinearStatic(
+    startCG = perf_counter()
+    resultCG = kernelCG.solveLinearStatic(
         mesh,
         dof_map,
         bcs,
         element_stiffnesses,
     )
-    solve_time = perf_counter() - start
+    solve_timeCG = perf_counter() - startCG
+    print("Solve time CG:", solve_timeCG)
 
-    #print("CG converged:", solver.converged)
-    #print("CG iterations:", solver.iterations)
-    #print("CG estimated error:", solver.estimated_error)
+    startD = perf_counter()
+    resultD = kernelD.solveLinearStatic(
+        mesh,
+        dof_map,
+        bcs,
+        element_stiffnesses,
+    )
+    solve_timeD = perf_counter() - startD
+    print("Solve time Direct:", solve_timeD)
 
     ###################################################################
     # Postprocess
@@ -136,10 +157,10 @@ for h in sizes:
     t0 = perf_counter()
 
     feast.PostProcessor.process(
-        result,
+        resultD,
         mesh,
         dof_map,
-        [material],
+        materials,
     )
 
     post_time = perf_counter() - t0
@@ -148,7 +169,6 @@ for h in sizes:
     # Print
     ###################################################################
 
-    total = perf_counter() - total_start
 
     print(
         f"{h:8.3f}"
@@ -156,7 +176,6 @@ for h in sizes:
         f"{len(mesh.elements()):12d}"
         f"{mesh_time:12.4f}"
         f"{ke_time:12.4f}"
-        f"{solve_time:12.4f}"
+        f"{solve_timeD:12.4f}|{solve_timeCG:.4f}"
         f"{post_time:12.4f}"
-        f"{total:12.4f}"
     )

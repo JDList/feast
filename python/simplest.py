@@ -2,12 +2,13 @@
 Basic feast run through to test debugging in cpp code
 """
 import feast
+from time import perf_counter
 # Geometry
-cuboid = feast.Cuboid(1.0, 1.0, 1.0)
+cuboid = feast.Cuboid(10.0, 5.0, 1.0)
 geometry = feast.CuboidBuilder().build(cuboid)
 
 # Meshing
-mesher = feast.StructuredTetMesher(0.15)
+mesher = feast.StructuredTetMesher(0.05)
 build = mesher.generate(geometry)
 
 mesh = build.mesh
@@ -35,15 +36,16 @@ print("resolved neumann:", resolved_bcs.numNeumann())
 dof_map = feast.DofMap()
 dof_map.resize(len(mesh.nodes()), 3)
 
-materials = [feast.LinearElastic(210e7, 0.3)]
+material = feast.LinearElastic(210e7, 0.3)
 
-element_stiffnesses = []
-for element in mesh.elements():
-    material = materials[element.material_id]
-    element_stiffnesses.append(feast.Tet4.stiffnessMatrix(mesh, element, material))
+beforeFor = perf_counter()
+
+element_stiffnesses = feast.ElementMatrixBuilder.buildStiffnesses(mesh,material)
 
 assert len(element_stiffnesses) == len(mesh.elements())
 
+afterFor = perf_counter()
+print(f"Material for loop time: {afterFor-beforeFor}")
 # Solve
 solver = feast.EigenCGSolver()
 kernel = feast.Kernel(solver)
@@ -62,7 +64,7 @@ pp = feast.PostProcessor.process(
         result,
         mesh,
         dof_map,
-        materials,
+        [material],
         )
 
 print("max displacement magnitude:", pp.displacement.magnitude.summary.max)

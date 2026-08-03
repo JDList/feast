@@ -12,7 +12,7 @@ lx = 2.0
 ly = 1.0
 lz = 0.5
 
-element_size = 0.5
+element_size = 0.05
 
 cube = feast.Cuboid(lx, ly, lz)
 
@@ -33,6 +33,7 @@ region_bcs = feast.RegionBoundaryConditionSet()
 
 for dof in (0, 1, 2):
     region_bcs.addRegionDirichlet("lowx", dof, 0.0)
+
 
 region_bcs.addRegionNeumann("highx", 2, 1.0e6)
 
@@ -86,7 +87,7 @@ for element in mesh.elements():
 # Solve
 ###############################################################################
 
-solver = feast.EigenDirectSolver()
+solver = feast.EigenCGSolver()
 
 kernel = feast.Kernel(solver)
 
@@ -136,7 +137,7 @@ print(disp.shape)
 
 scale = 5000.0
 
-coords_def = coords + scale * disp
+coords_def = coords + disp
 
 
 ###############################################################################

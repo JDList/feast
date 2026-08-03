@@ -12,7 +12,7 @@ Install with commands:
 
 git clone --recursive-submodules https://github.com/JDList/feast.git
 cd feast
-cmake -S . -B build
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build -j
 
 From there python package can be used by including "import feast" in your python file and PYTHONPATH=PATHTOFEAST/feast/python/ before running file or from within this filepath.
