@@ -5,6 +5,10 @@
 #include <cmath>
 #include <stdexcept>
 
+//#include <chrono>
+//#include <iostream>
+
+
 namespace feast
 {
 namespace
@@ -191,7 +195,13 @@ MeshBuildResult StructuredTetMesher::generate(const Geometry& geometry) const
         }
     }
 
+    //const auto faceCollectorStart = std::chrono::steady_clock::now();
+
     BoundaryFaceCollector::collect(result.groups, result.mesh);
+
+    //const auto faceCollectorEnd = std::chrono::steady_clock::now();
+    //const auto faceCollectorTime = std::chrono::duration<double>(faceCollectorEnd-faceCollectorStart).count();
+    //std::cout << "Time for face collection: "<< faceCollectorTime << "\n";
 
     return result;
 }

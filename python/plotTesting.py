@@ -12,7 +12,7 @@ lx = 2.0
 ly = 1.0
 lz = 0.5
 
-element_size = 0.05
+element_size = 0.1
 
 cube = feast.Cuboid(lx, ly, lz)
 
@@ -35,7 +35,7 @@ for dof in (0, 1, 2):
     region_bcs.addRegionDirichlet("lowx", dof, 0.0)
 
 
-region_bcs.addRegionNeumann("highx", 2, 1.0e6)
+region_bcs.addRegionNeumann("highx", 2, 1.0e9)
 
 bcs = feast.BoundaryConditionResolver.resolve(region_bcs, build)
 
@@ -44,12 +44,8 @@ bcs = feast.BoundaryConditionResolver.resolve(region_bcs, build)
 # Materials
 ###############################################################################
 
-materials = [
-    feast.LinearElastic(
-        210e9,
-        0.30
-    )
-]
+material = feast.LinearElastic(210e7, 0.3)
+
 
 
 ###############################################################################
@@ -68,20 +64,7 @@ dof_map.resize(
 # Element stiffness
 ###############################################################################
 
-element_stiffnesses = []
-
-for element in mesh.elements():
-
-    material = materials[element.material_id]
-
-    Ke = feast.Tet4.stiffnessMatrix(
-        mesh,
-        element,
-        material
-    )
-
-    element_stiffnesses.append(Ke)
-
+element_stiffnesses = feast.ElementMatrixBuilder.buildStiffnesses(mesh,material)
 
 ###############################################################################
 # Solve
@@ -107,7 +90,7 @@ pp = feast.PostProcessor.process(
     result,
     mesh,
     dof_map,
-    materials
+    [material]
 )
 
 

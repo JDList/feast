@@ -1,10 +1,13 @@
 #include "feast/meshing/BoundaryFaceCollector.hpp"
 
-#include <algorithm>
+#include <array>
+#include <cstddef>
+#include <functional>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 namespace feast
@@ -12,114 +15,214 @@ namespace feast
 namespace
 {
 
-struct FaceRecord
+struct FaceKey
 {
-    std::vector<std::size_t> node_ids;
-    std::size_t count{0};
+    std::array<std::size_t, 3> nodes;
+
+    bool operator==(const FaceKey& other) const noexcept
+    {
+        return nodes == other.nodes;
+    }
 };
 
-std::string faceKey(const std::vector<std::size_t>& node_ids)
+struct FaceKeyHash
 {
-    std::vector<std::size_t> sorted = node_ids;
-    std::sort(sorted.begin(), sorted.end());
+    std::size_t operator()(const FaceKey& face) const noexcept
+    {
+        std::size_t seed = 0;
 
-    std::string key;
-    for (std::size_t i = 0; i < sorted.size(); ++i) {
-        key += std::to_string(sorted[i]);
-        if (i + 1 < sorted.size()) {
-            key += '|';
+        for (const std::size_t value : face.nodes)
+        {
+            seed ^= std::hash<std::size_t>{}(value)
+                + 0x9e3779b97f4a7c15ULL
+                + (seed << 6)
+                + (seed >> 2);
         }
+
+        return seed;
     }
-    return key;
+};
+
+struct FaceRecord
+{
+    std::array<std::size_t, 3> node_ids;
+    std::size_t count{1};
+};
+
+FaceKey makeFaceKey(
+    std::size_t a,
+    std::size_t b,
+    std::size_t c) noexcept
+{
+    if (a > b)
+    {
+        std::swap(a, b);
+    }
+
+    if (b > c)
+    {
+        std::swap(b, c);
+    }
+
+    if (a > b)
+    {
+        std::swap(a, b);
+    }
+
+    return FaceKey{{a, b, c}};
 }
 
 bool containsAll(
     const std::unordered_set<std::size_t>& allowed,
-    const std::vector<std::size_t>& face_nodes)
+    const std::array<std::size_t, 3>& faceNodes)
 {
-    for (std::size_t node_id : face_nodes) {
-        if (allowed.find(node_id) == allowed.end()) {
-            return false;
-        }
-    }
-    return true;
-}
-
-std::unordered_set<std::size_t> toSet(const std::vector<std::size_t>& values)
-{
-    return std::unordered_set<std::size_t>(values.begin(), values.end());
-}
-
-std::vector<std::vector<std::size_t>> elementFaces(const Element& element)
-{
-    if (element.type != ElementType::Tet4) {
-        throw std::invalid_argument(
-            "BoundaryFaceCollector currently supports Tet4 only. "
-            "Add a face decomposition for the new element type here.");
-    }
-
-    if (element.node_ids.size() != 4) {
-        throw std::invalid_argument("Tet4 element must have exactly 4 node ids.");
-    }
-
-    const auto& n = element.node_ids;
-
-    return {
-        { n[0], n[1], n[2] },
-        { n[0], n[1], n[3] },
-        { n[0], n[2], n[3] },
-        { n[1], n[2], n[3] }
-    };
+    return allowed.contains(faceNodes[0])
+        && allowed.contains(faceNodes[1])
+        && allowed.contains(faceNodes[2]);
 }
 
 } // namespace
 
-void BoundaryFaceCollector::collect(MeshGroups& groups, const Mesh& mesh)
+void BoundaryFaceCollector::collect(
+    MeshGroups& groups,
+    const Mesh& mesh)
 {
     groups.face_sets.clear();
 
-    for (const auto& [region_name, _] : groups.node_sets) {
-        groups.face_sets.emplace(region_name, std::vector<BoundaryFace>{});
-    }
+    struct RegionMembership
+    {
+        std::string name;
+        std::unordered_set<std::size_t> node_ids;
+    };
 
-    std::unordered_map<std::string, FaceRecord> face_map;
-    face_map.reserve(mesh.elements().size() * 4);
+    std::vector<RegionMembership> regions;
+    regions.reserve(groups.node_sets.size());
 
-    for (const auto& element : mesh.elements()) {
-        for (const auto& face_nodes : elementFaces(element)) {
-            const std::string key = faceKey(face_nodes);
+    std::unordered_set<std::size_t> allBoundaryNodes;
 
-            auto it = face_map.find(key);
-            if (it == face_map.end()) {
-                face_map.emplace(key, FaceRecord{face_nodes, 1});
-            } else {
-                ++it->second.count;
-            }
+    for (const auto& [regionName, nodeIds] : groups.node_sets)
+    {
+        groups.face_sets.emplace(
+            regionName,
+            std::vector<BoundaryFace>{});
+
+        RegionMembership region;
+        region.name = regionName;
+        region.node_ids.reserve(nodeIds.size());
+
+        for (const std::size_t nodeId : nodeIds)
+        {
+            region.node_ids.insert(nodeId);
+            allBoundaryNodes.insert(nodeId);
         }
+
+        regions.push_back(std::move(region));
     }
 
-    // Keep only boundary faces (faces that appear once).
-    for (const auto& [_, record] : face_map) {
-        if (record.count != 1) {
+    const auto& elements = mesh.elements();
+
+    std::unordered_map<
+        FaceKey,
+        FaceRecord,
+        FaceKeyHash
+    > faceMap;
+
+    // Reserving 4 * elements is safe but often excessive because most faces
+    // are internal. This is a reasonable initial estimate.
+    faceMap.reserve(elements.size());
+
+    auto addFace =
+        [&faceMap, &allBoundaryNodes](
+            std::size_t a,
+            std::size_t b,
+            std::size_t c)
+    {
+        /*
+         * A true external face must consist only of nodes known to belong
+         * to the model boundary. This skips the great majority of internal
+         * tetrahedral faces before they reach the hash map.
+         */
+        if (!allBoundaryNodes.contains(a)
+            || !allBoundaryNodes.contains(b)
+            || !allBoundaryNodes.contains(c))
+        {
+            return;
+        }
+
+        const FaceKey key = makeFaceKey(a, b, c);
+
+        const auto [iterator, inserted] =
+            faceMap.try_emplace(
+                key,
+                FaceRecord{{a, b, c}, 1});
+
+        if (!inserted)
+        {
+            ++iterator->second.count;
+        }
+    };
+
+    for (const Element& element : elements)
+    {
+        if (element.type != ElementType::Tet4)
+        {
+            throw std::invalid_argument(
+                "BoundaryFaceCollector currently supports Tet4 only.");
+        }
+
+        if (element.node_ids.size() != 4)
+        {
+            throw std::invalid_argument(
+                "Tet4 element must have exactly four node IDs.");
+        }
+
+        const auto& n = element.node_ids;
+
+        addFace(n[0], n[1], n[2]);
+        addFace(n[0], n[1], n[3]);
+        addFace(n[0], n[2], n[3]);
+        addFace(n[1], n[2], n[3]);
+    }
+
+    for (const auto& [key, record] : faceMap)
+    {
+        if (record.count != 1)
+        {
             continue;
         }
 
-        std::vector<std::string> matches;
-        matches.reserve(groups.node_sets.size());
+        const RegionMembership* matchedRegion = nullptr;
 
-        for (const auto& [region_name, node_ids] : groups.node_sets) {
-            const auto allowed = toSet(node_ids);
-            if (containsAll(allowed, record.node_ids)) {
-                matches.push_back(region_name);
+        for (const RegionMembership& region : regions)
+        {
+            if (!containsAll(region.node_ids, record.node_ids))
+            {
+                continue;
             }
+
+            if (matchedRegion != nullptr)
+            {
+                throw std::runtime_error(
+                    "BoundaryFaceCollector: boundary face matched "
+                    "multiple regions.");
+            }
+
+            matchedRegion = &region;
         }
 
-        if (matches.size() != 1) {
+        if (matchedRegion == nullptr)
+        {
             throw std::runtime_error(
-                "BoundaryFaceCollector: unable to assign a boundary face uniquely to a region.");
+                "BoundaryFaceCollector: boundary face did not match "
+                "a region.");
         }
 
-        groups.face_sets[matches.front()].push_back(BoundaryFace{record.node_ids});
+        groups.face_sets[matchedRegion->name].push_back(
+            BoundaryFace{{
+                record.node_ids[0],
+                record.node_ids[1],
+                record.node_ids[2]
+            }});
     }
 }
 

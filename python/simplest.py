@@ -8,7 +8,7 @@ cuboid = feast.Cuboid(10.0, 5.0, 1.0)
 geometry = feast.CuboidBuilder().build(cuboid)
 
 # Meshing
-mesher = feast.StructuredTetMesher(0.05)
+mesher = feast.StructuredTetMesher(0.1)
 build = mesher.generate(geometry)
 
 mesh = build.mesh

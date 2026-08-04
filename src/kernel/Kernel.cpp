@@ -45,7 +45,7 @@ LinearStaticResult Kernel::solveLinearStatic(const Mesh& mesh,
 
     //const auto solverEnd = std::chrono::steady_clock::now();
     //const auto resultStart = std::chrono::steady_clock::now();
-
+;
     LinearStaticResult result;
     result.stiffness = K;
     result.force = f;
