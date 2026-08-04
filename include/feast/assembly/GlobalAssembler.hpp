@@ -10,6 +10,7 @@
 #include "feast/linalg/SparseMatrix.hpp"
 #include "feast/linalg/Vector.hpp"
 #include "feast/mesh/Mesh.hpp"
+#include "feast/materials/LinearElastic.hpp"
 
 namespace feast {
 
@@ -29,6 +30,13 @@ public:
                                        const BoundaryConditionSet& boundaryConditions,
                                        const std::vector<DenseMatrix>& elementStiffnesses,
                                        const std::vector<Vector>& elementVectors = {}) const;
+// New fused path: compute Ke inside the assembly loop.
+    AssemblyResult assembleLinearSystem(
+        const Mesh& mesh,
+        const DofMap& dofMap,
+        const BoundaryConditionSet& boundaryConditions,
+        const std::vector<LinearElastic>& materials,
+        const std::vector<Vector>& elementVectors = {}) const;
 
 private:
     std::size_t m_numDofs{0};

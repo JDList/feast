@@ -98,7 +98,7 @@ for h in sizes:
 
     t0 = perf_counter()
 
-    element_stiffnesses = feast.ElementMatrixBuilder.buildStiffnesses(mesh,material)
+#    element_stiffnesses = feast.ElementMatrixBuilder.buildStiffnesses(mesh,material)
 
 
     ke_time = perf_counter() - t0
@@ -107,10 +107,8 @@ for h in sizes:
     # Solve
     ###################################################################
 
-    solver = feast.EigenCGSolver(
-    tolerance=1e-10,
-    max_iterations=5000,
-    )
+    solver = feast.EigenCGSolver(tolerance=1e-10,max_iterations=5000)
+   # solver = feast.EigenDirectSolver()
 
     #print("Solver:", type(solver))
 
@@ -121,7 +119,7 @@ for h in sizes:
         mesh,
         dof_map,
         bcs,
-        element_stiffnesses,
+        [material]
     )
     solve_time = perf_counter() - start
 

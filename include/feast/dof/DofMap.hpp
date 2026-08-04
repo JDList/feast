@@ -14,6 +14,9 @@ public:
     int dof(std::size_t nodeId, std::size_t localDof) const;
 
     std::vector<int> elementDofs(const std::vector<std::size_t>& nodeIds) const;
+    //overload allows for lower ram usage
+    void elementDofs(const std::vector<std::size_t>& nodeIds,
+            std::vector<int>& dofsIds) const;
 
     std::size_t numNodes() const;
 

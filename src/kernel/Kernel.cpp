@@ -64,5 +64,32 @@ LinearStaticResult Kernel::solveLinearStatic(const Mesh& mesh,
     //    << std::chrono::duration<double>(resultEnd - resultStart).count() << " s\n";
     return result;
 }
+//overload kernel with reduced ram usage
+LinearStaticResult Kernel::solveLinearStatic(
+    const Mesh& mesh,
+    const DofMap& dofMap,
+    const BoundaryConditionSet& boundaryConditions,
+    const std::vector<LinearElastic>& materials,
+    const std::vector<Vector>& elementVectors) const
+{
+    GlobalAssembler assembler(dofMap.numDofs());
+    AssemblyResult assembly = assembler.assembleLinearSystem(
+        mesh,
+        dofMap,
+        boundaryConditions,
+        materials,
+        elementVectors);
+
+    SparseMatrix K = std::move(assembly.stiffness);
+    Vector f = std::move(assembly.force);
+
+    ConstraintApplier::applyDirichlet(K, f, dofMap, boundaryConditions);
+
+    LinearStaticResult result;
+    result.stiffness = std::move(K);
+    result.force = std::move(f);
+    result.solution = m_solver.solve(result.stiffness, result.force);
+    return result;
+}
 
 } 

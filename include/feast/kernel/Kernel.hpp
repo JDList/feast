@@ -11,6 +11,7 @@
 #include "feast/linalg/Vector.hpp"
 #include "feast/mesh/Mesh.hpp"
 #include "feast/solvers/LinearSolver.hpp"
+#include "feast/materials/LinearElastic.hpp"
 
 namespace feast {
 
@@ -26,11 +27,21 @@ class Kernel
 public:
     explicit Kernel(const LinearSolver& solver);
 
-    LinearStaticResult solveLinearStatic(const Mesh& mesh,
-                                         const DofMap& dofMap,
-                                         const BoundaryConditionSet& boundaryConditions,
-                                         const std::vector<DenseMatrix>& elementStiffnesses,
-                                         const std::vector<Vector>& elementVectors = {}) const;
+    LinearStaticResult solveLinearStatic(
+             const Mesh& mesh,
+             const DofMap& dofMap,
+             const BoundaryConditionSet& boundaryConditions,
+             const std::vector<DenseMatrix>& elementStiffnesses,
+             const std::vector<Vector>& elementVectors = {}) const;
+
+
+// New fused overload.
+    LinearStaticResult solveLinearStatic(
+        const Mesh& mesh,
+        const DofMap& dofMap,
+        const BoundaryConditionSet& boundaryConditions,
+        const std::vector<LinearElastic>& materials,
+        const std::vector<Vector>& elementVectors = {}) const;
 
 private:
     const LinearSolver& m_solver;

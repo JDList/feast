@@ -28,19 +28,30 @@ int DofMap::dof(std::size_t nodeId, std::size_t localDof) const
     return m_dofs[nodeId * m_dofsPerNode + localDof];
 }
 
+void DofMap::elementDofs(
+    const std::vector<std::size_t>& nodeIds,
+    std::vector<int>& dofIds) const
+{
+    dofIds.clear();
+    dofIds.reserve(nodeIds.size() * m_dofsPerNode);
+
+    for (const std::size_t nodeId : nodeIds)
+    {
+        for (std::size_t localDof = 0; localDof < m_dofsPerNode; ++localDof)
+        {
+            dofIds.push_back(dof(nodeId, localDof));
+        }
+    }
+}
+
 std::vector<int> DofMap::elementDofs(const std::vector<std::size_t>& nodeIds) const
 {
-    std::vector<int> dofs;
-    dofs.reserve(nodeIds.size() * m_dofsPerNode);
-
-    for (auto node : nodeIds)
-    {
-        for (std::size_t d = 0; d < m_dofsPerNode; ++d)
-            dofs.push_back(dof(node, d));
-    }
-
-    return dofs;
+    std::vector<int> dofIds;
+    elementDofs(nodeIds, dofIds);
+    return dofIds;
 }
+
+
 
 std::size_t DofMap::numNodes() const
 {

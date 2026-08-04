@@ -17,4 +17,197 @@ cmake --build build -j
 
 From there python package can be used by including "import feast" in your python file and PYTHONPATH=PATHTOFEAST/feast/python/ before running file or from within this filepath.
 
+~~~~~~~~~~~~~~ Example Python file usage ~~~~~~~~~~~~~~~~~~~~~~~
+
+import feast
+
+# GEOMETRY
+
+cuboid = feast.Cuboid(10.0, 5.0, 1.0) #x,y,z lengths
+geometry = feast.CuboidBuilder().build(cuboid)
+
+# MESHING
+
+mesher = feast.StructuredTetMesher(0.1)
+build = mesher.generate(geometry)
+
+mesh = build.mesh
+groups = build.groups
+
+# BOUNDARY CONDITIONS
+
+region_bcs = feast.RegionBoundaryConditionSet()
+for dof in (0, 1, 2):
+    region_bcs.addRegionDirichlet("lowx", dof, 0.0)
+#region_bcs.addRegionNeumann("lowx", 0, 1000.0)
+region_bcs.addRegionNeumann("highx", 0, -1000.0)
+
+resolved_bcs = feast.BoundaryConditionResolver.resolve(region_bcs, build)
+
+# DOF MAP / MATERIALS / ELEMENT STIFFNESS
+
+dof_map = feast.DofMap()
+dof_map.resize(len(mesh.nodes()), 3)
+
+material = feast.LinearElastic(210e7, 0.3)
+
+# SOLVE
+
+solver = feast.EigenCGSolver()
+kernel = feast.Kernel(solver)
+
+result = kernel.solveLinearStatic(
+        mesh,
+        dof_map,
+        resolved_bcs,
+        element_stiffnesses,
+        )
+
+
+# POSTPROCESSING
+
+pp = feast.PostProcessor.process(
+        result,
+        mesh,
+        dof_map,
+        [material],
+        )
+
+# ALL POSSIBLE OUTPUTS FROM POSTPROCESSING
+
+print("max displacement x:", pp.displacement.x.summary.max)
+print("mean displacement x:", pp.displacement.x.summary.mean)
+print("min displacement x:", pp.displacement.x.summary.min)
+print("range displacement x:", pp.displacement.x.summary.range)
+print("std displacement x:", pp.displacement.x.summary.standardDeviation)
+
+print("max displacement y:", pp.displacement.y.summary.max)
+print("mean displacement y:", pp.displacement.y.summary.mean)
+print("min displacement y:", pp.displacement.y.summary.min)
+print("range displacement y:", pp.displacement.y.summary.range)
+print("std displacement y:", pp.displacement.y.summary.standardDeviation)
+
+print("max displacement z:", pp.displacement.z.summary.max)
+print("mean displacement z:", pp.displacement.z.summary.mean)
+print("min displacement z:", pp.displacement.z.summary.min)
+print("range displacement z:", pp.displacement.z.summary.range)
+print("std displacement z:", pp.displacement.z.summary.standardDeviation)
+
+print("max displacement magnitude:", pp.displacement.magnitude.summary.max)
+print("mean displacement magnitude:", pp.displacement.magnitude.summary.mean)
+print("min displacement magnitude:", pp.displacement.magnitude.summary.min)
+print("range displacement magnitude:", pp.displacement.magnitude.summary.range)
+print("std displacement magnitude:", pp.displacement.magnitude.summary.standardDeviation)
+
+print("max strain xx:", pp.strain.xx.summary.max)
+print("mean strain xx:", pp.strain.xx.summary.mean)
+print("min strain xx:", pp.strain.xx.summary.min)
+print("range strain xx:", pp.strain.xx.summary.range)
+print("std strain xx:", pp.strain.xx.summary.standardDeviation)
+
+print("max strain yy:", pp.strain.yy.summary.max)
+print("mean strain yy:", pp.strain.yy.summary.mean)
+print("min strain yy:", pp.strain.yy.summary.min)
+print("range strain yy:", pp.strain.yy.summary.range)
+print("std strain yy:", pp.strain.yy.summary.standardDeviation)
+
+print("max strain zz:", pp.strain.zz.summary.max)
+print("mean strain zz:", pp.strain.zz.summary.mean)
+print("min strain zz:", pp.strain.zz.summary.min)
+print("range strain zz:", pp.strain.zz.summary.range)
+print("std strain zz:", pp.strain.zz.summary.standardDeviation)
+
+print("max strain xy:", pp.strain.xy.summary.max)
+print("mean strain xy:", pp.strain.xy.summary.mean)
+print("min strain xy:", pp.strain.xy.summary.min)
+print("range strain xy:", pp.strain.xy.summary.range)
+print("std strain xy:", pp.strain.xy.summary.standardDeviation)
+
+print("max strain yz:", pp.strain.yz.summary.max)
+print("mean strain yz:", pp.strain.yz.summary.mean)
+print("min strain yz:", pp.strain.yz.summary.min)
+print("range strain yz:", pp.strain.yz.summary.range)
+print("std strain yz:", pp.strain.yz.summary.standardDeviation)
+
+print("max strain zx:", pp.strain.zx.summary.max)
+print("mean strain zx:", pp.strain.zx.summary.mean)
+print("min strain zx:", pp.strain.zx.summary.min)
+print("range strain zx:", pp.strain.zx.summary.range)
+print("std strain zx:", pp.strain.zx.summary.standardDeviation)
+
+print("max strain magnitude:", pp.strain.magnitude.summary.max)
+print("mean strain magnitude:", pp.strain.magnitude.summary.mean)
+print("min strain magnitude:", pp.strain.magnitude.summary.min)
+print("range strain magnitude:", pp.strain.magnitude.summary.range)
+print("std strain magnitude:", pp.strain.magnitude.summary.standardDeviation)
+
+print("max stress xx:", pp.stress.xx.summary.max)
+print("mean stress xx:", pp.stress.xx.summary.mean)
+print("min stress xx:", pp.stress.xx.summary.min)
+print("range stress xx:", pp.stress.xx.summary.range)
+print("std stress xx:", pp.stress.xx.summary.standardDeviation)
+
+print("max stress yy:", pp.stress.yy.summary.max)
+print("mean stress yy:", pp.stress.yy.summary.mean)
+print("min stress yy:", pp.stress.yy.summary.min)
+print("range stress yy:", pp.stress.yy.summary.range)
+print("std stress yy:", pp.stress.yy.summary.standardDeviation)
+
+print("max stress zz:", pp.stress.zz.summary.max)
+print("mean stress zz:", pp.stress.zz.summary.mean)
+print("min stress zz:", pp.stress.zz.summary.min)
+print("range stress zz:", pp.stress.zz.summary.range)
+print("std stress zz:", pp.stress.zz.summary.standardDeviation)
+
+print("max stress xy:", pp.stress.xy.summary.max)
+print("mean stress xy:", pp.stress.xy.summary.mean)
+print("min stress xy:", pp.stress.xy.summary.min)
+print("range stress xy:", pp.stress.xy.summary.range)
+print("std stress xy:", pp.stress.xy.summary.standardDeviation)
+
+print("max stress yz:", pp.stress.yz.summary.max)
+print("mean stress yz:", pp.stress.yz.summary.mean)
+print("min stress yz:", pp.stress.yz.summary.min)
+print("range stress yz:", pp.stress.yz.summary.range)
+print("std stress yz:", pp.stress.yz.summary.standardDeviation)
+
+print("max stress zx:", pp.stress.zx.summary.max)
+print("mean stress zx:", pp.stress.zx.summary.mean)
+print("min stress zx:", pp.stress.zx.summary.min)
+print("range stress zx:", pp.stress.zx.summary.range)
+print("std stress zx:", pp.stress.zx.summary.standardDeviation)
+
+print("max stress magnitude:", pp.stress.magnitude.summary.max)
+print("mean stress magnitude:", pp.stress.magnitude.summary.mean)
+print("min stress magnitude:", pp.stress.magnitude.summary.min)
+print("range stress magnitude:", pp.stress.magnitude.summary.range)
+print("std stress magnitude:", pp.stress.magnitude.summary.standardDeviation)
+
+print("max hydrostatic stress:", pp.stress.hydrostatic.summary.max)
+print("mean hydrostatic stress:", pp.stress.hydrostatic.summary.mean)
+print("min hydrostatic stress:", pp.stress.hydrostatic.summary.min)
+print("range hydrostatic stress:", pp.stress.hydrostatic.summary.range)
+print("std hydrostatic stress:", pp.stress.hydrostatic.summary.standardDeviation)
+
+print("max von Mises stress:", pp.stress.vonMises.summary.max)
+print("mean von Mises stress:", pp.stress.vonMises.summary.mean)
+print("min von Mises stress:", pp.stress.vonMises.summary.min)
+print("range von Mises stress:", pp.stress.vonMises.summary.range)
+print("std von Mises stress:", pp.stress.vonMises.summary.standardDeviation)
+
+print("min principal stress:", pp.stress.principal.minimum.summary.min)
+print("mean principal stress:", pp.stress.principal.minimum.summary.mean)
+print("max principal stress:", pp.stress.principal.minimum.summary.max)
+
+print("middle principal stress min:", pp.stress.principal.middle.summary.min)
+print("middle principal stress mean:", pp.stress.principal.middle.summary.mean)
+print("middle principal stress max:", pp.stress.principal.middle.summary.max)
+
+print("max principal stress:", pp.stress.principal.maximum.summary.max)
+print("mean principal stress:", pp.stress.principal.maximum.summary.mean)
+print("min principal stress:", pp.stress.principal.maximum.summary.min)
+
+
+
+
 - James D. List
