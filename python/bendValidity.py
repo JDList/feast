@@ -33,10 +33,10 @@ LOAD_VALUE = -10e6
 LOAD_MODE = "surface_traction"  
 LOAD_DOF = 2                    # z displacement/force
 
-MESH_SIZES = (1.0, 0.5, 0.25, 0.125)
+MESH_SIZES = (1.0, 0.5, 0.25, 0.125, 0.05)
 FINEST_RELATIVE_ERROR_LIMIT = 0.15
 REQUIRE_MONOTONIC_CONVERGENCE = True
-USE_DIRECT_SOLVER = True
+USE_DIRECT_SOLVER = False
 
 
 @dataclass(frozen=True)
@@ -143,12 +143,15 @@ def run_case(h: float) -> Row:
     materials = [material]
 
     start = perf_counter()
-    element_stiffnesses = build_stiffnesses(mesh, material)
+    #element_stiffnesses = build_stiffnesses(mesh, material)
     ke_time = perf_counter() - start
     if USE_DIRECT_SOLVER:
         solver = feast.EigenDirectSolver()
     else:
-        solver = feast.EigenCGSolver()
+        solver = feast.EigenCGSolver(
+         tolerance=1e-10,
+         max_iterations=20000,
+         )  
     kernel = feast.Kernel(solver)
 
     start = perf_counter()
@@ -156,7 +159,7 @@ def run_case(h: float) -> Row:
         mesh,
         dof_map,
         resolved_bcs,
-        element_stiffnesses,
+        materials
     )
     solve_time = perf_counter() - start
 

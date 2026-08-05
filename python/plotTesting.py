@@ -10,7 +10,7 @@ import feast
 
 lx = 2.0
 ly = 1.0
-lz = 0.5
+lz = 1.0
 
 element_size = 0.1
 
@@ -31,11 +31,14 @@ mesh = build.mesh
 
 region_bcs = feast.RegionBoundaryConditionSet()
 
-for dof in (0, 1, 2):
-    region_bcs.addRegionDirichlet("lowx", dof, 0.0)
+#for dof in (0, 1, 2):
+#    region_bcs.addRegionDirichlet("lowx", dof, 0.0)
 
 
-region_bcs.addRegionNeumann("highx", 2, 1.0e9)
+#region_bcs.addRegionNeumann("highx", 2, 1.0e9)
+region_bcs.addRegionDirichlet("lowx", 0, 0.0)
+region_bcs.addRegionDirichlet("highx", 0, 1.0)
+
 
 bcs = feast.BoundaryConditionResolver.resolve(region_bcs, build)
 
@@ -64,7 +67,7 @@ dof_map.resize(
 # Element stiffness
 ###############################################################################
 
-element_stiffnesses = feast.ElementMatrixBuilder.buildStiffnesses(mesh,material)
+#element_stiffnesses = feast.ElementMatrixBuilder.buildStiffnesses(mesh,material)
 
 ###############################################################################
 # Solve
@@ -78,7 +81,7 @@ result = kernel.solveLinearStatic(
     mesh,
     dof_map,
     bcs,
-    element_stiffnesses
+    [material]
 )
 
 

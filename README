@@ -60,7 +60,7 @@ result = kernel.solveLinearStatic(
         mesh,
         dof_map,
         resolved_bcs,
-        element_stiffnesses,
+        [material]
         )
 
 
